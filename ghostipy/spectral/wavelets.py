@@ -8,21 +8,29 @@ __all__ = ['Wavelet',
            'AmorWavelet',
            'BumpWavelet']
 
-class Wavelet(ABC):
-
-    def __init__(self):
-        pass
-
-    @abstractmethod
-    def freq_domain_numba(self, omega, scales, out, *, derivative=False):
-        pass
-
-    @property
-    @abstractmethod
-    def is_analytic(self):
-        pass
-
 def reference_coi(psifn, reference_scale, *, threshold=1/(np.e**2)):
+    """
+    Estimates a wavelet's cone of influence.
+
+    Parameters
+    ----------
+    psifn : function
+        Function to get the wavelet frequency domain representation
+    reference_scale : float
+        Scale at which 'psifn' should be evaluated
+    threshold : float, optional
+        The value C that determines the wavelet's cone of influence. The
+        maximum value P of the wavelet's power autocorrelation is taken
+        in the time domain. Then the cone of influence is given by the
+        region where the power autocorrelation is above C*P. Default value
+        for C is e^(-2).
+
+    Returns
+    -------
+    reference_coi : float
+        The COI for the passed-in 'reference_scale'
+
+    """
 
     omega = np.fft.fftfreq(2**22) * 2 * np.pi
     psif = psifn(omega, reference_scale).squeeze()
@@ -40,11 +48,187 @@ def reference_coi(psifn, reference_scale, *, threshold=1/(np.e**2)):
     return reference_coi
 
 def coi(scales, reference_scale, reference_coi, *, fs=1):
+    """
+    Estimates a wavelet's cone of influence (in seconds)
+    for requested scales, given a reference scale and
+    reference COI
+
+    Parameters
+    ----------
+    scales : np.ndarray, with shape (n_scales, )
+        Array of scales for which to estimate the COI
+    reference_scale : float
+        The scale used as a reference
+    reference_coi : float
+        The COI used as a reference
+    fs : float, optional
+        Sampling rate.
+        Default is 1, where the COI in seconds is identical
+        to the COI in number of samples
+
+    Returns
+    -------
+    cois : np.ndarray, with shape (n_scales, )
+        The COIs for each value of 'scales'
+    """
     
     scales = np.atleast_1d(scales)
     factors = scales / reference_scale
-    print("Reference coi: {} samples".format(reference_coi))
+
     return factors * reference_coi / fs
+
+class Wavelet(ABC):
+    """
+    The abstract base class that all wavelets in this package inherit from.
+    A custom wavelet should use this template if it is intended to be used
+    for the cwt() and wsst() methods. Note that the built-in wavelets have
+    been implemented as a bandpass filter bank with peak value 2 in the
+    frequency domain.
+    """
+
+    def __init__(self):
+        pass
+
+    @abstractmethod
+    def freq_domain(self, omega, scales, *, derivative=False):
+        """
+        Get the frequency domain representation of the wavelet
+
+        Parameters
+        ----------
+        omega : np.ndarray, with shape (n_freqs, )
+            Array of angular frequencies
+        scales : np.narray, with shape (n_scales, )
+            Array of scales to use
+        derivative : boolean, optional
+            If True, return the derivative of the wavelet
+
+        Returns
+        -------
+        psif : np.ndarray, with shape (n_scales, n_freqs)
+            The frequency domain representation given the
+            passed-in 'scales'
+        """
+        pass
+
+    @abstractmethod
+    def freq_domain_numba(self, omega, scales, out, *, derivative=False):
+        """
+        Get the frequency domain representation of the wavelet using
+        numba as the backend
+
+        Parameters
+        ----------
+        omega : np.ndarray, with shape (n_freqs, )
+            Array of angular frequencies
+        scales : np.narray, with shape (n_scales, )
+            Array of scales to use
+        out : np.ndarray, with shape (n_scales, n_freqs)
+            Output array to store the result
+        derivative : boolean, optional
+            If True, return the derivative of the wavelet
+
+        Returns
+        -------
+        result : boolean
+            True if successfully, False otherwise
+        """
+        pass
+
+    @abstractmethod
+    def freq_to_scale(self, freqs):
+        """
+        Map center frequency to scale
+
+        Parameters
+        ----------
+        freqs : np.ndarray, with shape (n_freqs, )
+            Array of frequencies. Units should be radians within
+            the range [-pi, pi]
+
+        Returns
+        -------
+        scales : np.ndarray, with shape (n_scales, )
+            The scales corresponding to each frequency
+        """
+        pass
+
+    @abstractmethod
+    def scale_to_freq(self, scales):
+        """
+        Map scale to center frequency
+
+        Parameters
+        ----------
+        scales : np.ndarray, with shape (n_scales, )
+            Array of scales
+
+        Returns
+        -------
+        freqs : np.ndarray, with shape (n_scales, )
+            The center frequencies corresponding to each
+            scale. Units are in radians.
+        """
+        pass
+
+    @abstractmethod
+    def reference_coi(self, *, threshold=1/(np.e**2)):
+        """
+        Get the COI for the base scale
+
+        Parameters
+        ----------
+        threshold : float, optional
+            The value C that determines the wavelet's cone of influence. The
+            maximum value P of the wavelet's power autocorrelation is taken
+            in the time domain. Then the cone of influence is given by the
+            region where the power autocorrelation is above C*P. Default value
+            for C is e^(-2).
+        """
+        pass
+
+    @abstractmethod
+    def coi(self, scales, reference_scale, reference_coi, *, fs=1):
+        """
+        Estimates a wavelet's cone of influence (in seconds)
+        for requested scales, given a reference scale and
+        reference COI
+
+        Parameters
+        ----------
+        scales : np.ndarray, with shape (n_scales, )
+            Array of scales for which to estimate the COI
+        reference_scale : float
+            The scale used as a reference
+        reference_coi : float
+            The COI used as a reference
+        fs : float, optional
+            Sampling rate.
+            Default is 1, where the COI in seconds is identical
+            to the COI in number of samples
+
+        Returns
+        -------
+        cois : np.ndarray, with shape (n_scales, )
+            The COIs for each value of 'scales'
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def admissibility_constant(self):
+        """
+        The admissibility constant (float)
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def is_analytic(self):
+        """
+        Whether or not a wavelet is analytic (boolean)
+        """
+        pass
 
 @njit
 def _morse_freq_domain(omega, scales, gamma, beta, out,

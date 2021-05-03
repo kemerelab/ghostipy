@@ -153,7 +153,7 @@ def cwt(data, *, fs=1, timestamps=None, wavelet=MorseWavelet(gamma=3, beta=20),
     w_ref_high = np.pi
     if verbose:
         print(
-            f"Smallest reference frequency: {normalized_rad_to_hz(w_ref_low, fs)} Hz")
+            f"Smallest reference frequency: {normalized_rad_to_hz(w_ref_low, fs):0.4f} Hz")
 
     if freqs is not None:
         # just in case user didn't pass in sorted
@@ -220,7 +220,7 @@ def cwt(data, *, fs=1, timestamps=None, wavelet=MorseWavelet(gamma=3, beta=20),
     # Set up array as C contiguous since we will be iterating row-by-row
     n_bits = len(scales) * data.shape[0] * 16
     if verbose:
-        print(f"{n_bits/1e9} GB = {n_bits/(1024**3)} GiB required")
+        print(f"Output space requirement: {n_bits/1e9} GB = {n_bits/(1024**3)} GiB")
 
     output_shape = (scales.shape[0], N)
     dtype = '<c16'
@@ -232,6 +232,8 @@ def cwt(data, *, fs=1, timestamps=None, wavelet=MorseWavelet(gamma=3, beta=20),
         return output_shape, dtype
 
     if cwt_out is not None:
+        if verbose:
+            print("Using passed-in output array")
         if cwt_out.shape != output_shape:
             raise ValueError(
                 f"Provided output array has shape {coefs.shape}"
@@ -239,11 +241,8 @@ def cwt(data, *, fs=1, timestamps=None, wavelet=MorseWavelet(gamma=3, beta=20),
         coefs = cwt_out
     else:
         if verbose:
-            print("Pre-allocating output array")
+            print("Allocating output array")
         coefs = pyfftw.zeros_aligned(output_shape, dtype='complex128')
-
-    if verbose:
-        print(f"extend_len is {extend_len}, data shape is {data.shape}")
 
     ######################################################################
     # Set up CWT parallel computation
@@ -302,7 +301,7 @@ def cwt(data, *, fs=1, timestamps=None, wavelet=MorseWavelet(gamma=3, beta=20),
         print('CWT total elapsed time: {} seconds'.format(time.time() - t0))
 
     if timestamps is None:
-        timestamps = np.arange(data.shape) / fs
+        timestamps = np.arange(data.shape[0]) / fs
     
     return coefs, scales, normalized_rad_to_hz(ws, fs), timestamps, cois
 
