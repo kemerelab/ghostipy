@@ -301,7 +301,7 @@ def cwt(data, *, fs=1, timestamps=None, wavelet=MorseWavelet(gamma=3, beta=20),
         print('CWT total elapsed time: {} seconds'.format(time.time() - t0))
 
     if timestamps is None:
-        timestamps = np.arange(data.shape[0]) / fs
+        timestamps = np.arange(N) / fs
     
     return coefs, scales, normalized_rad_to_hz(ws, fs), timestamps, cois
 
