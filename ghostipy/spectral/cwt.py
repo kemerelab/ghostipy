@@ -1,6 +1,7 @@
 import logging
 import pyfftw
 import dask
+import warnings
 import numpy as np
 
 import time
@@ -30,7 +31,8 @@ def cwt(data, *, fs=1, timestamps=None, wavelet=MorseWavelet(gamma=3, beta=20),
     timestamps : np.ndarray, with shape (n_timepoints, ) optional
         Timestamps corresponding to the data, in seconds.
         If None, they will be computed automatically based on the
-        assumption that all the data are one contiguous block.
+        assumption that all the data are one contiguous block, and
+        the units will be in seconds.
     wavelet : ghostipy.wavelet
         Type of wavelet to use for the transform.
         Default is a Morse wavelet with beta=3 and gamma=20.
@@ -163,27 +165,26 @@ def cwt(data, *, fs=1, timestamps=None, wavelet=MorseWavelet(gamma=3, beta=20),
         w_low = ws[0]
         w_high = ws[-1]
         if w_low < w_ref_low:
-            print(
+            warnings.warn(
                 f"Warning: Lower frequency limit of {freq_limits[0]} is less than the smallest "
-                f"recommended frequency of {normalized_rad_to_hz(w_ref_low, fs)} Hz")
+                f"recommended frequency of {normalized_rad_to_hz(w_ref_low, fs):0.4f} Hz")
         if w_high > w_ref_high:
-            print(
+            warnings.warn(
                 f"Warning: Upper frequency limit of {freq_limits[1]} is greater than the largest "
-                f"recommended frequency of {normalized_rad_to_hz(w_ref_high, fs)} Hz")
+                f"recommended frequency of {normalized_rad_to_hz(w_ref_high, fs):0.4f} Hz")
     elif freq_limits is not None:
         # just in case user didn't pass in limits as [lower_bound, upper_bound]
         freq_limits = np.sort(freq_limits)
         w_low = hz_to_normalized_rad(freq_limits[0], fs)
         w_high = hz_to_normalized_rad(freq_limits[1], fs)
         if w_low < w_ref_low:
-            print(
+            warnings.warn(
                 f"Lower frequency limit of {freq_limits[0]} is less than the smallest "
-                f"recommended frequency of {normalized_rad_to_hz(w_ref_low, fs)} Hz")
+                f"recommended frequency of {normalized_rad_to_hz(w_ref_low, fs):0.4f} Hz")
         if w_high > w_ref_high:
-            print(
+            warnings.warn(
                 f"Upper frequency limit of {freq_limits[1]} is greater than the largest "
-                f"recommended frequency of {normalized_rad_to_hz(w_ref_high, fs)} Hz")
-        print(w_low, w_ref_low, w_high, w_ref_high)
+                f"recommended frequency of {normalized_rad_to_hz(w_ref_high, fs):0.4f} Hz")
     else:
         w_low = w_ref_low
         w_high = w_ref_high
@@ -204,7 +205,7 @@ def cwt(data, *, fs=1, timestamps=None, wavelet=MorseWavelet(gamma=3, beta=20),
     
     extend_len = int(np.ceil(np.max(cois)))
     if extend_len > N:
-        print(f"Warning: Cannot add {extend_len} points to satisfy requested"
+        warnings.warn(f"Cannot add {extend_len} points to satisfy requested"
                 f" boundary policy. Shorting this value to data length {N}")
         extend_len = N
     

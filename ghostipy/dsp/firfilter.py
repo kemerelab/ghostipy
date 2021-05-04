@@ -105,7 +105,7 @@ def _firspline(numtaps, f1, f2, *, fs=None, p=None):
 
     if p is None:
         p = 0.312*numtaps*(f2 - f1)/nyq
-        print(p)
+        # print(p)
     if not p >= 0:
         raise ValueError("p must be positive but got {}".format(p))
         
