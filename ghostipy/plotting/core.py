@@ -357,7 +357,7 @@ def plot_wavelet_spectrogram(s, f, t, *, kind='amplitude', freq_limits=None, tim
         xa = xr.DataArray(
             data,
             dims=['Frequency', xlabel],
-            coords={'frequency':fvec, xlabel:tvec})
+            coords={'Frequency':fvec, xlabel:tvec})
         plot = xa.hvplot.quadmesh(
             x=xlabel, y='Frequency', title=title_str,
             colorbar=colorbar, **kwargs)
