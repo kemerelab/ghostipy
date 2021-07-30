@@ -3,6 +3,10 @@ import numpy as np
 import pyfftw
 import gc
 
+__all__ = ['analytic_signal',
+           'signal_envelope',
+           'signal_phase']
+
 def _check_params(signal, axis, pad_to, threads):
     if not np.all(np.isreal(signal)):
         raise ValueError("The input data must be real-valued")
