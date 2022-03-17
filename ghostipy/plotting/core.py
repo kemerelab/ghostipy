@@ -3,6 +3,7 @@ import xarray as xr
 import holoviews as hv
 import hvplot.xarray
 import dask.array as da
+import scipy.signal as sig
 import matplotlib.pyplot as plt
 from multiprocessing import cpu_count
 
