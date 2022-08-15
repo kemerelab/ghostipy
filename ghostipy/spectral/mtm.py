@@ -277,16 +277,19 @@ def mtm_spectrogram(data, bandwidth, *, fs=1, timestamps=None, nperseg=None, nov
         shape=shape,
         strides=strides,
         writeable=False)
-    
-    n_segments = data_strided.shape[0]
+
+    ts = timestamps
+    ts_shape = ts.shape[:-1]+((ts.shape[-1]-noverlap)//step, nperseg)
+    ts_strides = ts.strides[:-1]+(step*ts.strides[-1], ts.strides[-1])
     out_timestamps = np.mean(
         as_strided(
-            timestamps,
-            shape=shape,
-            strides=strides,
+            ts,
+            shape=ts_shape,
+            strides=ts_strides,
             writeable=False),
             axis=1)
     
+    n_segments = data_strided.shape[0]
     if np.isrealobj(data):
         M = nfft // 2 + 1
 

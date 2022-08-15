@@ -283,7 +283,7 @@ def plot_wavelet_spectrogram(s, f, t, *, kind='amplitude', freq_limits=None, tim
         freq_slices = slice(None, None, None)
     
     if time_limits is not None:
-        time_slices = _get_time_slices(t, time_limits[0], time_limites[1])
+        time_slices = _get_time_slices(t, time_limits[0], time_limits[1])
     else:
         time_slices = slice(None, None, None)
 
